@@ -36,8 +36,13 @@ public class PasswordTokenGranter extends AbstractTokenGranter {
     protected OAuth2Authentication getOAuth2Authentication(ClientDetails client, TokenRequest tokenRequest) {
         Map<String, String> parameters = new LinkedHashMap<>(tokenRequest.getRequestParameters());
         String username = parameters.get("username");
+        String loginByPin = parameters.get("by_pin");
         String password = parameters.get("password");
         parameters.remove("password");
+        if("by_ping".equals(loginByPin)){
+            password = null;
+        }
+        
         Authentication userAuth = new UsernamePasswordAuthenticationToken(username, password);
         ((AbstractAuthenticationToken) userAuth).setDetails(parameters);
 
