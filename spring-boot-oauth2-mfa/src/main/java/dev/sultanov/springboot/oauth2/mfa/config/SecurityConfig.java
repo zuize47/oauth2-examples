@@ -3,6 +3,7 @@ package dev.sultanov.springboot.oauth2.mfa.config;
 import dev.sultanov.springboot.oauth2.mfa.service.UserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,7 +16,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     final private UserDetailsService userDetailsService;
 
-    public SecurityConfig(UserDetailsService userDetailsService) {
+    public SecurityConfig(@Lazy UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
 
@@ -35,14 +36,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsService)
                 .passwordEncoder(passwordEncoder());
-        // auth.inMemoryAuthentication()
-        //         .withUser("john")
-        //         .password(passwordEncoder().encode("pass"))
-        //         .roles("USER")
-        //         .and()
-        //         .withUser("anna")
-        //         .password(passwordEncoder().encode("qwerty"))
-        //         .roles("USER");
     }
 
     @Override
