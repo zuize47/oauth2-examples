@@ -1,7 +1,9 @@
 package dev.sultanov.springboot.oauth2.mfa.config.granter;
 
 import dev.sultanov.springboot.oauth2.mfa.exception.MfaRequiredException;
+import dev.sultanov.springboot.oauth2.mfa.model.MfaCode;
 import dev.sultanov.springboot.oauth2.mfa.service.MfaService;
+
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -26,7 +28,8 @@ public class PasswordTokenGranter extends AbstractTokenGranter {
     private final AuthenticationManager authenticationManager;
     private final MfaService mfaService;
 
-    public PasswordTokenGranter(AuthorizationServerEndpointsConfigurer endpointsConfigurer, AuthenticationManager authenticationManager, MfaService mfaService) {
+    public PasswordTokenGranter(AuthorizationServerEndpointsConfigurer endpointsConfigurer, 
+                    AuthenticationManager authenticationManager, MfaService mfaService) {
         super(endpointsConfigurer.getTokenServices(), endpointsConfigurer.getClientDetailsService(), endpointsConfigurer.getOAuth2RequestFactory(), GRANT_TYPE);
         this.authenticationManager = authenticationManager;
         this.mfaService = mfaService;
@@ -56,8 +59,10 @@ public class PasswordTokenGranter extends AbstractTokenGranter {
             OAuth2Request storedOAuth2Request = this.getRequestFactory().createOAuth2Request(client, tokenRequest);
             if (mfaService.isEnabled(username)) {
                 userAuth = new UsernamePasswordAuthenticationToken(username, password, Collections.singleton(PRE_AUTH));
-                OAuth2AccessToken accessToken = getTokenServices().createAccessToken(new OAuth2Authentication(storedOAuth2Request, userAuth));
-                throw new MfaRequiredException(accessToken.getValue());
+                var mfaCode = new MfaCode(java.util.UUID.randomUUID().toString(), "999999", new OAuth2Authentication(storedOAuth2Request, userAuth));
+                mfaService.storeMfa(mfaCode);
+                //OAuth2AccessToken accessToken = getTokenServices().createAccessToken();
+                throw new MfaRequiredException(mfaCode.getMfaCode());
             }
             return new OAuth2Authentication(storedOAuth2Request, userAuth);
         } else {

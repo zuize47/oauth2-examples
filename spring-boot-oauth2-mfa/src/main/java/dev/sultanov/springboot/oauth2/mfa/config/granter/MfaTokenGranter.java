@@ -60,19 +60,17 @@ public class MfaTokenGranter extends AbstractTokenGranter {
     }
 
     private OAuth2Authentication loadAuthentication(String accessTokenValue) {
-        OAuth2AccessToken accessToken = this.tokenStore.readAccessToken(accessTokenValue);
-        if (accessToken == null) {
+        var mfa = this.mfaService.getMfa(accessTokenValue);
+        if (mfa == null) {
+            throw new InvalidTokenException("Invalid access token or expired: " + accessTokenValue + "");
+        } 
+
+        OAuth2Authentication result = mfa.getOAuth2Authentication();
+        if (result == null) {
             throw new InvalidTokenException("Invalid access token: " + accessTokenValue);
-        } else if (accessToken.isExpired()) {
-            this.tokenStore.removeAccessToken(accessToken);
-            throw new InvalidTokenException("Access token expired: " + accessTokenValue);
-        } else {
-            OAuth2Authentication result = this.tokenStore.readAuthentication(accessToken);
-            if (result == null) {
-                throw new InvalidTokenException("Invalid access token: " + accessTokenValue);
-            }
-            return result;
         }
+        return result;
+        
     }
 
     private int parseCode(String codeString) {
