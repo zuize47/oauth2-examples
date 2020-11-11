@@ -2,22 +2,18 @@ package dev.sultanov.springboot.oauth2.mfa.config.granter;
 
 import dev.sultanov.springboot.oauth2.mfa.model.MfaCode;
 import dev.sultanov.springboot.oauth2.mfa.service.MfaService;
-import org.springframework.security.authentication.AuthenticationManager;
+import dev.sultanov.springboot.oauth2.mfa.service.UserDetailsService;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.common.OAuth2AccessToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.exceptions.InvalidRequestException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
-import org.springframework.security.oauth2.provider.ClientDetails;
-import org.springframework.security.oauth2.provider.ClientDetailsService;
-import org.springframework.security.oauth2.provider.ClientRegistrationException;
-import org.springframework.security.oauth2.provider.OAuth2Authentication;
-import org.springframework.security.oauth2.provider.OAuth2Request;
-import org.springframework.security.oauth2.provider.TokenRequest;
+import org.springframework.security.oauth2.provider.*;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
-import org.springframework.security.oauth2.provider.token.TokenStore;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,17 +22,16 @@ import java.util.Set;
 public class MfaTokenGranter extends AbstractTokenGranter {
     private static final String GRANT_TYPE = "mfa";
 
-    private final TokenStore tokenStore;
     private final ClientDetailsService clientDetailsService;
-    private final AuthenticationManager authenticationManager;
     private final MfaService mfaService;
+    private final UserDetailsService userDetailsService;
 
-    public MfaTokenGranter(AuthorizationServerEndpointsConfigurer endpointsConfigurer, AuthenticationManager authenticationManager, MfaService mfaService) {
+    public MfaTokenGranter(AuthorizationServerEndpointsConfigurer endpointsConfigurer,
+                           MfaService mfaService, UserDetailsService userDetailsService) {
         super(endpointsConfigurer.getTokenServices(), endpointsConfigurer.getClientDetailsService(), endpointsConfigurer.getOAuth2RequestFactory(), GRANT_TYPE);
-        this.tokenStore = endpointsConfigurer.getTokenStore();
         this.clientDetailsService = endpointsConfigurer.getClientDetailsService();
-        this.authenticationManager = authenticationManager;
         this.mfaService = mfaService;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -50,6 +45,7 @@ public class MfaTokenGranter extends AbstractTokenGranter {
             if (parameters.containsKey("mfa_code")) {
                 int code = parseCode(parameters.get("mfa_code"));
                 if (mfaService.verifyCode(username, code, mfaCode.getMfaPin())) {
+                    mfaService.removeMfa(mfaCode.getMfaCode());
                     return getAuthentication(tokenRequest, authentication);
                 }
             } else {
@@ -84,7 +80,10 @@ public class MfaTokenGranter extends AbstractTokenGranter {
     }
 
     private OAuth2Authentication getAuthentication(TokenRequest tokenRequest, OAuth2Authentication authentication) {
-        Authentication user = authenticationManager.authenticate(authentication.getUserAuthentication());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(authentication.getPrincipal().toString());
+        Authentication user = new UsernamePasswordAuthenticationToken(authentication.getPrincipal(), null,
+               userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
         Object details = authentication.getDetails();
         authentication = new OAuth2Authentication(authentication.getOAuth2Request(), user);
         authentication.setDetails(details);

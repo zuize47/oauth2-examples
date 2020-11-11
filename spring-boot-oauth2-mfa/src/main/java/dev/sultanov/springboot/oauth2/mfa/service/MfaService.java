@@ -1,5 +1,6 @@
 package dev.sultanov.springboot.oauth2.mfa.service;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,7 @@ public class MfaService {
         return SECRET_BY_USERNAME.containsKey(username) && code == storeCode;
     }
 
-    @Cacheable(value = "mfa_token", key = "#mfaCode", unless="#result == null")
+    @Cacheable(value =  "mfa_token", key = "#mfaCode", unless="#result == null")
     public MfaCode getMfa(String mfaCode){
         return null;
     }
@@ -30,5 +31,9 @@ public class MfaService {
     @CachePut(cacheNames = "mfa_token", key = "#mfa.mfaCode")
     public MfaCode storeMfa(MfaCode mfa){
         return mfa;
+    }
+    @CacheEvict(value = "mfa_token", key = "#mfaCode")
+    public void removeMfa(String mfaCode){
+
     }
 }
