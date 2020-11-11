@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.Objects;
 
 public class CustomUser extends org.springframework.security.core.userdetails.User {
+
+    private static final long serialVersionUID = 2598954688082299206L;
     private long userId;
 
     public CustomUser(long userId, String username, String password, boolean enabled, Collection<? extends GrantedAuthority> authorities) {
