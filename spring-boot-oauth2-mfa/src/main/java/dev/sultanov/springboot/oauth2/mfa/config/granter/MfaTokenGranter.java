@@ -1,5 +1,6 @@
 package dev.sultanov.springboot.oauth2.mfa.config.granter;
 
+import dev.sultanov.springboot.oauth2.mfa.model.MfaCode;
 import dev.sultanov.springboot.oauth2.mfa.service.MfaService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -43,11 +44,12 @@ public class MfaTokenGranter extends AbstractTokenGranter {
         Map<String, String> parameters = new LinkedHashMap<>(tokenRequest.getRequestParameters());
         final String mfaToken = parameters.get("mfa_token");
         if (mfaToken != null) {
-            OAuth2Authentication authentication = loadAuthentication(mfaToken);
+            MfaCode mfaCode = loadAuthentication(mfaToken);
+            OAuth2Authentication authentication = mfaCode.getOAuth2Authentication();
             final String username = authentication.getName();
             if (parameters.containsKey("mfa_code")) {
                 int code = parseCode(parameters.get("mfa_code"));
-                if (mfaService.verifyCode(username, code)) {
+                if (mfaService.verifyCode(username, code, mfaCode.getMfaPin())) {
                     return getAuthentication(tokenRequest, authentication);
                 }
             } else {
@@ -59,7 +61,7 @@ public class MfaTokenGranter extends AbstractTokenGranter {
         }
     }
 
-    private OAuth2Authentication loadAuthentication(String accessTokenValue) {
+    private MfaCode loadAuthentication(String accessTokenValue) {
         var mfa = this.mfaService.getMfa(accessTokenValue);
         if (mfa == null) {
             throw new InvalidTokenException("Invalid access token or expired: " + accessTokenValue + "");
@@ -69,7 +71,7 @@ public class MfaTokenGranter extends AbstractTokenGranter {
         if (result == null) {
             throw new InvalidTokenException("Invalid access token: " + accessTokenValue);
         }
-        return result;
+        return mfa;
         
     }
 

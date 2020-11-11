@@ -59,9 +59,8 @@ public class PasswordTokenGranter extends AbstractTokenGranter {
             OAuth2Request storedOAuth2Request = this.getRequestFactory().createOAuth2Request(client, tokenRequest);
             if (mfaService.isEnabled(username)) {
                 userAuth = new UsernamePasswordAuthenticationToken(username, password, Collections.singleton(PRE_AUTH));
-                var mfaCode = new MfaCode(java.util.UUID.randomUUID().toString(), "999999", new OAuth2Authentication(storedOAuth2Request, userAuth));
+                var mfaCode = new MfaCode(java.util.UUID.randomUUID().toString(), 999999, new OAuth2Authentication(storedOAuth2Request, userAuth));
                 mfaService.storeMfa(mfaCode);
-                //OAuth2AccessToken accessToken = getTokenServices().createAccessToken();
                 throw new MfaRequiredException(mfaCode.getMfaCode());
             }
             return new OAuth2Authentication(storedOAuth2Request, userAuth);

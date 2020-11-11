@@ -18,11 +18,11 @@ public class MfaService {
         return SECRET_BY_USERNAME.containsKey(username);
     }
 
-    public boolean verifyCode(String username, int code) {
-        return SECRET_BY_USERNAME.containsKey(username) && code == 999999;
+    public boolean verifyCode(String username, int code, int storeCode) {
+        return SECRET_BY_USERNAME.containsKey(username) && code == storeCode;
     }
 
-    @Cacheable(value = "mfa_token", key = "#mfaCode")
+    @Cacheable(value = "mfa_token", key = "#mfaCode", unless="#result == null")
     public MfaCode getMfa(String mfaCode){
         return null;
     }
