@@ -49,7 +49,7 @@ public class AuthServerConfig extends AuthorizationServerConfigurerAdapter {
     @Override
     public void configure(AuthorizationServerEndpointsConfigurer endpoints) {
         endpoints
-            //.accessTokenConverter(accessTokenConverter())
+            .accessTokenConverter(accessTokenConverter())
             .tokenGranter(tokenGranter(endpoints))
             ;
     }
